@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-# Driveload - Google Drive Downloader for Termux
+# Driveload Installer
 echo -e "\033[1;34m"
 echo "   ____                    _       _      "
 echo "  |  _ \ _ __ _   _ _ __ | | ___ | |__   "
@@ -17,7 +17,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}[*] Setting up Driveload for Termux${NC}"
+echo -e "${BLUE}[*] Installing Driveload...${NC}"
 
 # Update packages
 echo -e "${GREEN}[+] Updating packages...${NC}"
@@ -37,8 +37,8 @@ pip install --upgrade pip gdown beautifulsoup4 requests || {
     exit 1
 }
 
-# Setup storage permissions
-echo -e "${GREEN}[+] Setting up storage permissions...${NC}"
+# Setup storage
+echo -e "${GREEN}[+] Setting up storage...${NC}"
 if [ ! -d ~/storage ]; then
     termux-setup-storage || {
         echo -e "${RED}[-] Failed to setup storage${NC}"
@@ -51,19 +51,19 @@ echo -e "${GREEN}[+] Creating download directory...${NC}"
 mkdir -p ~/storage/downloads/Driveload
 
 # Make script executable
-echo -e "${GREEN}[+] Making Driveload executable...${NC}"
+echo -e "${GREEN}[+] Setting permissions...${NC}"
 chmod +x driveload.py
 
-# Create shortcut command
-echo -e "${GREEN}[+] Creating shortcut command 'driveload'...${NC}"
+# Create alias
+echo -e "${GREEN}[+] Creating driveload command...${NC}"
 echo 'alias driveload="python ~/Driveload/driveload.py"' >> ~/.bashrc
 echo 'echo "Driveload Commands:"' >> ~/.bashrc
-echo 'echo "  driveload <url>          - Download files from Google Drive"' >> ~/.bashrc
-echo 'echo "  driveload <url> -d <dir> - Download to custom directory"' >> ~/.bashrc
+echo 'echo "  driveload <url>          - Download from Google Drive"' >> ~/.bashrc
+echo 'echo "  driveload <url> -d <dir> - Custom download location"' >> ~/.bashrc
 
-# Apply changes
+# Refresh shell
 source ~/.bashrc
 
-echo -e "${GREEN}[+] Driveload installed successfully!${NC}"
-echo -e "${YELLOW}[*] Usage: driveload <Google Drive URL>${NC}"
-echo -e "${YELLOW}[*] Example: driveload https://drive.google.com/drive/folders/ABC123xyz${NC}"
+echo -e "\n${GREEN}[+] Driveload installed successfully!${NC}"
+echo -e "${YELLOW}[*] Usage: driveload <Google-Drive-URL>${NC}"
+echo -e "${YELLOW}[*] Example: driveload https://drive.google.com/drive/folders/ABC123${NC}"
