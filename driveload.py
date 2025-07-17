@@ -3,52 +3,72 @@
 import os
 import re
 import requests
-from bs4 import BeautifulSoup
 import gdown
 import argparse
+from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
 
 def show_banner():
-    print("\033[1;34m")
-    print("   ____                    _       _      ")
-    print("  |  _ \ _ __ _   _ _ __ | | ___ | |__   ")
-    print("  | | | | '__| | | | '_ \| |/ _ \| '_ \  ")
-    print("  | |_| | |  | |_| | |_) | | (_) | |_) | ")
-    print("  |____/|_|   \__, | .__/|_|\___/|_.__/  ")
-    print("              |___/|_|                   ")
-    print("\033[0m")
+    print(r"""
+   ____                    _       _      
+  |  _ \ _ __ _   _ _ __ | | ___ | |__   
+  | | | | '__| | | | '_ \| |/ _ \| '_ \  
+  | |_| | |  | |_| | |_) | | (_) | |_) | 
+  |____/|_|   \__, | .__/|_|\___/|_.__/  
+              |___/|_|                   
+""")
 
 def get_folder_id(url):
+    """Extract folder ID from Google Drive URL"""
     patterns = [
         r'https://drive\.google\.com/drive/folders/([a-zA-Z0-9_-]+)',
         r'https://drive\.google\.com/open\?id=([a-zA-Z0-9_-]+)',
         r'id=([a-zA-Z0-9_-]+)'
     ]
+    
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
+    
     parsed = urlparse(url)
     qs = parse_qs(parsed.query)
     return qs.get('id', [None])[0]
 
 def get_files_from_folder(folder_id):
+    """Get list of files from public Google Drive folder"""
     url = f"https://drive.google.com/drive/folders/{folder_id}"
     try:
-        response = requests.get(url)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.98 Mobile Safari/537.36'
+        }
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
+        
+        # Modern parsing method
+        files = []
         soup = BeautifulSoup(response.text, 'html.parser')
-        return [
-            (a.text, "https://drive.google.com" + a['href'])
-            for a in soup.find_all('a', {'class': 'Q5txwe'})
-        ]
+        
+        # Find all script tags containing file data
+        scripts = soup.find_all('script')
+        for script in scripts:
+            if 'window._DRIVE_ivd' in script.text:
+                data = script.text.split('window._DRIVE_ivd = ')[1].split(';')[0]
+                matches = re.findall(r'\["([^"]+)",null,null,\d+,\d+,\[\["([^"]+)"\]', data)
+                for name, file_id in matches:
+                    if name and file_id:
+                        file_url = f"https://drive.google.com/uc?id={file_id}"
+                        files.append((name, file_url))
+        
+        return files
     except Exception as e:
         print(f"\033[1;31m[!] Error accessing folder: {str(e)}\033[0m")
         return []
 
 def download_file(file_url, destination):
+    """Download file using gdown"""
     try:
-        output = gdown.download(file_url, destination, fuzzy=True)
+        output = gdown.download(file_url, destination, fuzzy=True, quiet=False)
         return bool(output)
     except Exception as e:
         print(f"\033[1;31m[!] Download error: {str(e)}\033[0m")
@@ -84,7 +104,10 @@ def main():
                 print(f"\033[1;31m[✗] Failed: {clean_name}\033[0m")
         print("\n\033[1;32m[+] Download completed!\033[0m")
     else:
-        print("\033[1;31m[!] No files found or folder is not public\033[0m")
+        print("\033[1;31m[!] No files found. Possible reasons:\033[0m")
+        print("    1. Folder is not public (check sharing settings)")
+        print("    2. Google changed their page structure (report to developer)")
+        print("    3. No internet connection")
 
 if __name__ == "__main__":
     main()
